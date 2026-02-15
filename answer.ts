@@ -132,3 +132,85 @@ let schema13 = z.object({
 });
 
 console.log(schema13.parse({ password: "ajajqw123sdjdc" }));
+
+// soal 14
+let schema14 = z.object({
+  name: z.string("must containt string"),
+  price: z.number("must containt number").min(1, "must greater than 0"),
+});
+
+let schema14v2 = z.array(schema14).min(1, "must had minimum one object");
+
+console.log(
+  schema14v2.parse([
+    {
+      name: "nike air shoes",
+      price: 10000,
+    },
+    {
+      name: "jordan air shoes",
+      price: 20000,
+    },
+    {
+      name: "skechers shoes",
+      price: 30000,
+    },
+  ]),
+);
+
+// soal 15
+let test = schema14v2.safeParse([
+  {
+    username: "advan ai gen",
+    price: 10000000,
+  },
+  {
+    username: "advan ai gen",
+    price: 10000000,
+  },
+  {
+    username: "advan ai gen",
+    price: 10000000,
+  },
+  {
+    username: "advan ai gen",
+    price: 10000000,
+  },
+]);
+
+console.log(test.error?.flatten());
+
+// soal 16
+let schema16 = z
+  .object({
+    username: z.string(),
+    password: z.string(),
+    confirm_password: z.string(),
+  })
+  .refine((val) => val.password === val.confirm_password, {
+    message: "confirm password must same like password",
+    path: ["confirm_password"],
+  });
+
+console.log(
+  schema16.parse({
+    username: "jowjo",
+    password: "sandi123",
+    confirm_password: "sandi123",
+  }),
+);
+
+// soal 17
+let schema17 = z.coerce.date().refine((date) => date < new Date(), {
+  message: "date cant more than today",
+});
+console.log(schema17.parse("2025-12-12"));
+
+// soal 18
+let schema18v2 = z
+  .array(z.number())
+  .refine((val) => new Set(val).size === val.length, {
+    message: "cant adding the same input",
+  });
+
+console.log(schema18v2.parse([1, 2, 3, 4, 5]));
