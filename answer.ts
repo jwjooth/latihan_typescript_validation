@@ -214,3 +214,79 @@ let schema18v2 = z
   });
 
 console.log(schema18v2.parse([1, 2, 3, 4, 5]));
+
+// soal 19
+let schema19 = z.number().transform((value) => "Rp" + value);
+console.log(schema19.parse(10000));
+
+// soal 20
+let schema20 = z
+  .array(
+    z.object({
+      id: z.string("must containt string"),
+      items: z.object({
+        name: z.string("must containt string"),
+        qty: z
+          .number("must containt number")
+          .min(1, "must containt at least one value"),
+      }),
+    }),
+  )
+  .min(1, "must containt at least one value");
+
+console.log(
+  schema20.parse([
+    {
+      id: "1",
+      items: {
+        name: "shoes",
+        qty: 12,
+      },
+    },
+    {
+      id: "2",
+      items: {
+        name: "tables",
+        qty: 10,
+      },
+    },
+    {
+      id: "3",
+      items: {
+        name: "books",
+        qty: 4,
+      },
+    },
+  ]),
+);
+
+// soal 21
+let schema21 = z
+  .object({
+    email: z.email("format email is not valid"),
+    password: z.string().min(8, "minimum 8 characters"),
+  })
+  .transform((issue, ctx) => {
+    if (issue.password === z.ZodIssueCode.too_small) {
+      return {
+        message: "minimum 8 characters",
+      };
+    }
+    return ctx.value;
+  });
+
+console.log(
+  schema21.parse({
+    email: "jordan@gmail.com",
+    password: "12345678",
+  }),
+);
+
+// soal 22
+let schema22 = z.union([
+  z.string().min(3, "must more than 3 characters"),
+  z.number().min(1, "must greater than 0"),
+]);
+
+console.log(schema22.parse("jowjo"))
+console.log(schema22.parse(2))
