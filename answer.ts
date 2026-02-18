@@ -1,4 +1,4 @@
-import { date, email, map, z } from "zod";
+import { date, email, map, number, string, uuid, z, ZodError } from "zod";
 
 // soal 1
 let schema = z
@@ -288,5 +288,201 @@ let schema22 = z.union([
   z.number().min(1, "must greater than 0"),
 ]);
 
-console.log(schema22.parse("jowjo"))
-console.log(schema22.parse(2))
+console.log(schema22.parse("jowjo"));
+console.log(schema22.parse(2));
+
+// soal 23
+interface Admin {
+  type: "admin";
+  data: { accessLevel: 1 | 2 | 3 | 4 | 5 };
+}
+
+interface User {
+  type: "user";
+  data: { subscription: "FREE" | "PRO" };
+}
+
+type Person = Admin | User;
+
+function fPerson(value: Person) {
+  if (value.type === "admin") {
+    return value.data.accessLevel;
+  } else if (value.type === "user") {
+    return value.data.subscription;
+  }
+}
+
+let Admin1: Admin = {
+  type: "admin",
+  data: {
+    accessLevel: 1,
+  },
+};
+
+let User1: User = {
+  type: "user",
+  data: {
+    subscription: "PRO",
+  },
+};
+
+console.log(fPerson(Admin1));
+console.log(fPerson(User1));
+
+// soal 24
+let schema24 = z
+  .object({
+    age: z.number(),
+    country: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.age < 21 && data.country.toUpperCase() === "US")
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "minimum age is 21 and country cant be US",
+        path: ["age", "country"],
+      });
+  });
+
+console.log(
+  schema24.parse({
+    age: 20,
+    country: "US",
+  }),
+);
+
+// soal 25
+let schema25 = z.coerce
+  .number()
+  .min(100)
+  .transform((val) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+    }).format(val),
+  );
+
+console.log(schema25.parse("100000"));
+
+// soal 26
+let schema26Order = z.object({
+  id: z.string().uuid(),
+  total: z.number().gt(0, "must greater than 1"),
+});
+
+let schema26Customer = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  registeredAt: z.date(),
+  orders: z.array(schema26Order),
+});
+
+console.log(
+  schema26Customer.parse({
+    id: "1",
+    name: "jowjo",
+    registeredAt: "2022-12-12",
+    orders: [{ id: "2", total: 2 }],
+  }),
+);
+
+// soal 27
+let schema27 = z.map(
+  z.string().min(3, "must more than 3 characters"),
+  z
+    .array(z.number().positive("the number must be positive"))
+    .min(2, "array must have at least 2 numbers"),
+);
+
+console.log(
+  schema27.parse({
+    "kelahiran tahun 2000": 26,
+    "kelahiran tahun 2001": 25,
+    "kelahiran tahun 2002": 24,
+    "kelahiran tahun 2003": 23,
+    "kelahiran tahun 2004": 22,
+  }),
+);
+
+// soal 28
+let schema28 = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  password: z.string().min(5),
+});
+
+let AdminUser = schema28.extend({
+  accessLevel: z.string(),
+  permission: z.boolean(),
+});
+
+let CustomerUser = schema28.extend({
+  subscription: z.string(),
+  address: z.string(),
+});
+
+console.log(
+  AdminUser.parse({
+    id: "1",
+    username: "nama admin",
+    password: "password admin",
+    accessLevel: "free",
+    permission: true,
+  }),
+);
+
+console.log(
+  CustomerUser.parse({
+    id: "2",
+    username: "nama customer",
+    password: "password customer",
+    subscription: "subscribe",
+    address: "alamat customer",
+  }),
+);
+
+// soal 29
+let schema29 = z.object({
+  name: z.string(),
+  age: z.number(),
+});
+
+try {
+  schema29.parse({
+    name: "jowjo",
+    age: "12",
+  });
+} catch (error: any) {
+  if (error instanceof z.ZodError) {
+    error.message = "Validation Failed";
+  }
+} finally {
+  console.log("processed successful!");
+}
+
+// soal 30
+let schema30 = z
+  .object({
+    transactionId: z.string().uuid(),
+    userId: z.string().uuid(),
+    items: z.array(
+      z.object({
+        productId: z.string().uuid(),
+        price: z.number().gt(0),
+        quantity: z.number().gt(0),
+      }),
+    ),
+    payment: z.object({
+      method: z.enum(["CREDIT_CARD", "BANK_TRANSFER"]),
+      paidAt: z.date(),
+    }),
+    createdAt: z.date().refine((val) => val < new Date(), "cant in the future"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.items.length <= 1)
+      return ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "data items cant be empty",
+        path: ["items"],
+      });
+  });
